@@ -1,28 +1,16 @@
 package cachedhttp
 
-import java.nio.file._
-
 import scala.concurrent.ExecutionContext
 import scala.concurrent.Await
 import scala.concurrent.duration._
-import scala.io.Source
 
 import org.apache.pekko.actor.typed._
 import org.apache.pekko.actor.typed.scaladsl._
 
-import org.apache.commons.codec.digest.DigestUtils
+import cached.Cached
 
-val parent: Path = Paths.get("cache")
-
-def getCached(id: String, url: String)(implicit sys: ActorSystem[_]): String =
-  require(Files.isDirectory(parent), "directory cache/ should exist")
-  // sparql url commonly too long for fs..
-  //val file = parent.resolve(url.filter(_.isLetterOrDigit))
-  val file = parent.resolve(id + "-" + DigestUtils.sha256Hex(url))
-  
-  if Files.exists(file) then
-    Source.fromFile(file.toFile).mkString
-  else
+class HttpCache(implicit sys: ActorSystem[_]) extends Cached[String](identity):
+  override def fetchUncached(url: String): Array[Byte] =
     import org.apache.pekko.http.scaladsl.client.RequestBuilding.Get
     import org.apache.pekko.http.scaladsl.client._
     import org.apache.pekko.http.scaladsl.model._
@@ -34,6 +22,4 @@ def getCached(id: String, url: String)(implicit sys: ActorSystem[_]): String =
       Get(url).addHeader(Accept(MediaRanges.`*/*`))),
       30.seconds
     )  
-    val bytes = Await.result(res.entity.toStrict(10.seconds), 10.seconds).data.toArray
-    Files.write(file, bytes)
-    new String(bytes)
+    Await.result(res.entity.toStrict(10.seconds), 10.seconds).data.toArray

@@ -6,7 +6,7 @@ import org.apache.pekko.actor.typed.scaladsl._
 import spray.json._
 import DefaultJsonProtocol._
 
-import cachedhttp.getCached
+import cachedhttp.HttpCache
 
 case class GitHubRepo(
   name: String
@@ -14,7 +14,6 @@ case class GitHubRepo(
 
 object GitHubRepo:
   given JsonReader[GitHubRepo] = jsonFormat1(GitHubRepo.apply)
-
 
 case class Project(
   doap: String,
@@ -27,13 +26,14 @@ object Project:
 @main
 def main =
   implicit val system = ActorSystem[Any](Behaviors.empty, "main")
-  val projects = getCached("projects", s"https://projects.apache.org/json/foundation/projects.json")
+  val http = new HttpCache
+  val projects = http.get("projects", s"https://projects.apache.org/json/foundation/projects.json")
     .parseJson
     .asJsObject
     .fields
     .mapValues(_.convertTo[Project])
     .toSeq
-  val githubRepos = getCached("repos", s"https://api.github.com/orgs/apache/repos?per_page=100")
+  val githubRepos = http.get("repos", s"https://api.github.com/orgs/apache/repos?per_page=100")
     .parseJson
     .asInstanceOf[JsArray]
     .elements
