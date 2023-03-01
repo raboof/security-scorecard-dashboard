@@ -15,4 +15,5 @@ libraryDependencies ++= Seq(
   "io.spray" %% "spray-json" % "1.3.6",
 ).map(_.cross(CrossVersion.for3Use2_13)) ++ Seq(
   "commons-codec" % "commons-codec" % "1.15",
+  "commons-io" % "commons-io" % "2.11.0",
 )

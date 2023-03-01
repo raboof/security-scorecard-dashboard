@@ -8,6 +8,8 @@ import DefaultJsonProtocol._
 
 import cachedhttp.HttpCache
 import cachedgithub.GitHubCache
+import scorecard.Scorecard
+import scorecard.Scorecards
 
 case class GitHubRepo(
   name: String
@@ -27,7 +29,6 @@ object Project:
 case class Committee(id: String, name: String)
 object Committee:
   given JsonReader[Committee] = jsonFormat2(Committee.apply)
-
 
 @main
 def main =
@@ -69,5 +70,12 @@ def main =
     println(s"${c.name}:")
     githubRepos.filter(_.name.startsWith(c.id)).foreach(r =>
       println(s"- https://github.com/apache/${r.name}")
+      //Scorecards.get(s"score-${r.name}", s"https://github.com/apache/${r.name}")
     )
   )
+  val columns = Scorecards.get("score", "https://github.com/apache/zookeeper")
+    .parseJson
+    .convertTo[Scorecard]
+    .checks
+    .map(_.name)
+  println(columns)

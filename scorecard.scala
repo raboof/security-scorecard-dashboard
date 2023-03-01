@@ -30,7 +30,7 @@ object Scorecard:
 object Scorecards extends Cached[String](identity):
   override def fetchUncached(repo: String): Array[Byte] =
     var p = Promise[java.io.InputStream]
-    var e = Promise[java.io.InputStream]
+    //var e = Promise[java.io.InputStream]
     var seq = Seq("scorecard", s"--repo=$repo", "--format=json", "--show-details")
     var proc = Process(seq)
     var process = proc.run(new ProcessIO(
@@ -39,16 +39,18 @@ object Scorecards extends Cached[String](identity):
         p.completeWith(Future.successful(stdout))
       },
       (stderr: java.io.InputStream) => {
-        e.completeWith(Future.successful(stderr))
+        stderr.transferTo(System.out)
+        //e.completeWith(Future.successful(stderr))
       },
     ))
     
     given ExecutionContext = ExecutionContext.global
     val ro = Await.result(p.future, 60.seconds)
-    val re = Await.result(e.future, 60.seconds)
-    println(process.exitValue())
-    val errors = IOUtils.toByteArray(re)
-    println("Errors: " + new String(errors))
+    //val re = Await.result(e.future, 60.seconds)
+    if process.exitValue() != 0 then
+        throw new IllegalStateException(s"Failed to get scorecard for $repo")
+    //val errors = IOUtils.toByteArray(re)
+    //println("Errors: " + new String(errors))
     val result = IOUtils.toByteArray(ro)
-    println("Output: " + new String(result))
+    //println("Output: " + new String(result))
     result
