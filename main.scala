@@ -12,11 +12,12 @@ import scorecard.Scorecard
 import scorecard.Scorecards
 
 case class GitHubRepo(
-  name: String
+  name: String,
+  archived: Boolean
 )
 
 object GitHubRepo:
-  given JsonReader[GitHubRepo] = jsonFormat1(GitHubRepo.apply)
+  given JsonReader[GitHubRepo] = jsonFormat2(GitHubRepo.apply)
 
 case class Project(
   doap: Option[String],
@@ -59,6 +60,8 @@ def main =
     .asInstanceOf[JsArray]
     .elements
     .map(_.convertTo[GitHubRepo])
+    .filterNot(_.archived)
+    .filterNot(_.name.endsWith("site"))
   println(s"GitHub repos: ${githubRepos.size}");
   val mapped = githubRepos.map(r => (r,
     committees.filter (p => r.name.startsWith(p.id) || r.name.startsWith(s"incubator-${p.id}")).headOption)
@@ -66,16 +69,22 @@ def main =
   println(s"GitHub repos starting with a project name: ${mapped.filter(_._2.isDefined).size}");
   // Infrastructure, security, some other leftovers
   //println(s"GitHub repos not starting with a project name: ${mapped.filterNot(_._2.isDefined).size}");
-  committees.foreach(c =>
-    println(s"${c.name}:")
-    githubRepos.filter(_.name.startsWith(c.id)).foreach(r =>
-      println(s"- https://github.com/apache/${r.name}")
-      //Scorecards.get(s"score-${r.name}", s"https://github.com/apache/${r.name}")
-    )
+  val columns = Seq(
+    "Binary-Artifacts", "Branch-Protection", "CI-Tests", "CII-Best-Practices", "Code-Review", "Contributors", "Dangerous-Workflow", "Dependency-Update-Tool", "Fuzzing", "License", "Maintained", "Packaging", "Pinned-Dependencies", "SAST", "Security-Policy", "Signed-Releases", "Token-Permissions", "Vulnerabilities"
   )
-  val columns = Scorecards.get("score", "https://github.com/apache/zookeeper")
-    .parseJson
-    .convertTo[Scorecard]
-    .checks
-    .map(_.name)
-  println(columns)
+  print("committee\trepo\toverall\t" + columns.mkString("\t") + "\n")
+  committees.foreach(c =>
+    //println(s"${c.name}:")
+    val populated = githubRepos.filter(_.name.startsWith(c.id)).filter(r => Scorecards.has(r.name))
+    if (populated.nonEmpty) {
+      populated.foreach { r =>
+        print(s"${c.name}\t${r.name}\t")
+        val s = Scorecards.get(r.name)
+        columns.map { column =>
+          print(s.score + "\t" + s.checks.filter(_.name == column).headOption.map(_.score).getOrElse("-1"))
+          print("\t")
+        }
+        print("\n")
+      }
+    }
+  )

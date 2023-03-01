@@ -28,6 +28,13 @@ object Scorecard:
   given JsonReader[Scorecard] = jsonFormat3(Scorecard.apply)
 
 object Scorecards extends Cached[String](identity):
+  def has(repo: String): Boolean =
+    has(s"score-$repo", s"https://github.com/apache/$repo")
+  def get(repo: String): Scorecard =
+    get(s"score-$repo", s"https://github.com/apache/$repo")
+      .parseJson
+      .convertTo[Scorecard]
+
   override def fetchUncached(repo: String): Array[Byte] =
     var p = Promise[java.io.InputStream]
     //var e = Promise[java.io.InputStream]
