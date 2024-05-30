@@ -1,11 +1,10 @@
-scalaVersion := "3.2.2"
+scalaVersion := "3.4.2"
 
-//val PekkoVersion = "0.0.0+26576-fd932032+20230215-0056-SNAPSHOT"
-val PekkoVersion = "0.0.0+26576-fd932032-SNAPSHOT"
-val PekkoHttpVersion = "0.0.0+4276-38e1f22f-SNAPSHOT"
+val PekkoVersion = "1.1.0-M1"
+val PekkoHttpVersion = "1.1.0-M1"
 
 //resolvers += "Apache Pekko Nightlies" at "https://nightlies.apache.org/pekko/snapshots"
-resolvers += "Apache Pekko Snapshots" at "https://repository.apache.org/content/groups/snapshots"
+//resolvers += "Apache Pekko Snapshots" at "https://repository.apache.org/content/groups/snapshots"
 
 libraryDependencies ++= Seq(
   "org.apache.pekko" %% "pekko-actor-typed" % PekkoVersion,
