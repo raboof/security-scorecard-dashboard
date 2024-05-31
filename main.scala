@@ -74,17 +74,19 @@ def main =
   )
   print("committee\trepo\toverall\t" + columns.mkString("\t") + "\n")
   committees.foreach(c =>
-    //println(s"${c.name}:")
-    val populated = githubRepos.filter(_.name.startsWith(c.id)).filter(r => Scorecards.has(r.name))
-    if (populated.nonEmpty) {
-      populated.foreach { r =>
-        print(s"${c.name}\t${r.name}\t")
-        val s = Scorecards.get(r.name)
+    val fetchIfNeeded = true
+    val repos = githubRepos
+      .filter(_.name.startsWith(c.id))
+      .filterNot(_.name.contains('-'))
+      .filterNot(_.name == "inlong")
+      .flatMap(r => Scorecards.get(r.name, fetchIfNeeded))
+    if repos.nonEmpty then
+      repos.foreach { s =>
+        print(s"${c.name}\t${s.repo.name}\t")
         columns.map { column =>
-          print(s.score + "\t" + s.checks.filter(_.name == column).headOption.map(_.score).getOrElse("-1"))
+          print(s.score + "\t" + s.checks.flatMap(_.filter(_.name == column).headOption).map(_.score).getOrElse("-1"))
           print("\t")
         }
         print("\n")
       }
-    }
   )
