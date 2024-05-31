@@ -33,6 +33,8 @@ object Committee:
 
 @main
 def main =
+  val fetchIfNeeded = true
+
   implicit val system = ActorSystem[Any](Behaviors.empty, "main")
   val http = new HttpCache
   val github = new GitHubCache
@@ -72,21 +74,14 @@ def main =
   val columns = Seq(
     "Binary-Artifacts", "Branch-Protection", "CI-Tests", "CII-Best-Practices", "Code-Review", "Contributors", "Dangerous-Workflow", "Dependency-Update-Tool", "Fuzzing", "License", "Maintained", "Packaging", "Pinned-Dependencies", "SAST", "Security-Policy", "Signed-Releases", "Token-Permissions", "Vulnerabilities"
   )
-  print("committee\trepo\toverall\t" + columns.mkString("\t") + "\n")
-  committees.foreach(c =>
-    val fetchIfNeeded = true
-    val repos = githubRepos
+  val cards = committees.flatMap(c =>
+    githubRepos
       .filter(_.name.startsWith(c.id))
+      // For now only report on 'main' repos
       .filterNot(_.name.contains('-'))
       .filterNot(_.name == "inlong")
       .flatMap(r => Scorecards.get(r.name, fetchIfNeeded))
-    if repos.nonEmpty then
-      repos.foreach { s =>
-        print(s"${c.name}\t${s.repo.name}\t")
-        columns.map { column =>
-          print(s.score + "\t" + s.checks.flatMap(_.filter(_.name == column).headOption).map(_.score).getOrElse("-1"))
-          print("\t")
-        }
-        print("\n")
-      }
+  )
+  cards.sortBy(_.score).foreach(c =>
+    println(s"${c.repo.name}\t${c.score}")
   )
