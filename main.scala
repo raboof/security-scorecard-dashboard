@@ -64,6 +64,10 @@ def main =
     .map(_.convertTo[GitHubRepo])
     .filterNot(_.archived)
     .filterNot(_.name.endsWith("site"))
+    .filterNot(_.name.endsWith("examples"))
+    .filterNot(_.name.endsWith("testing"))
+    // TAP5-2781
+    .filterNot(c => Seq("tapestry3", "tapestry4").contains(c.name))
   println(s"GitHub repos: ${githubRepos.size}");
   val mapped = githubRepos.map(r => (r,
     committees.filter (p => r.name.startsWith(p.id) || r.name.startsWith(s"incubator-${p.id}")).headOption)
@@ -71,17 +75,18 @@ def main =
   println(s"GitHub repos starting with a project name: ${mapped.filter(_._2.isDefined).size}");
   // Infrastructure, security, some other leftovers
   //println(s"GitHub repos not starting with a project name: ${mapped.filterNot(_._2.isDefined).size}");
-  val columns = Seq(
-    "Binary-Artifacts", "Branch-Protection", "CI-Tests", "CII-Best-Practices", "Code-Review", "Contributors", "Dangerous-Workflow", "Dependency-Update-Tool", "Fuzzing", "License", "Maintained", "Packaging", "Pinned-Dependencies", "SAST", "Security-Policy", "Signed-Releases", "Token-Permissions", "Vulnerabilities"
-  )
   val cards = committees.flatMap(c =>
     githubRepos
       .filter(_.name.startsWith(c.id))
-      // For now only report on 'main' repos
+      // To only report on 'main' repos
       .filterNot(_.name.contains('-'))
+      .filterNot(_.name.startsWith("incubator-"))
       .filterNot(_.name == "inlong")
       .flatMap(r => Scorecards.get(r.name, fetchIfNeeded))
   )
-  cards.sortBy(_.score).foreach(c =>
-    println(s"${c.repo.name}\t${c.score}")
-  )
+  //cards.sortBy(_.repo.name).foreach(c =>
+  //cards.sortBy(_.score).foreach(c =>
+  //  println(s"${c.repo.name}\t${c.score}")
+  //)
+  report.write(cards, "./report.html")
+  println("Wrote report to ./report.html")

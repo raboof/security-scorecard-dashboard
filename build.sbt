@@ -11,6 +11,7 @@ libraryDependencies ++= Seq(
   "org.apache.pekko" %% "pekko-stream" % PekkoVersion,
   "org.apache.pekko" %% "pekko-actor-testkit-typed" % PekkoVersion % Test,
   "org.apache.pekko" %% "pekko-http" % PekkoHttpVersion,
+  "com.lihaoyi" %% "scalatags" % "0.13.1",
   "io.spray" %% "spray-json" % "1.3.6",
 ).map(_.cross(CrossVersion.for3Use2_13)) ++ Seq(
   "commons-codec" % "commons-codec" % "1.15",

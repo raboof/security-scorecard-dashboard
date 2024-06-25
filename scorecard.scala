@@ -26,6 +26,14 @@ case class Scorecard(repo: Repo, score: Double, checks: Option[Seq[Check]])
 object Scorecard:
   given JsonReader[Scorecard] = jsonFormat3(Scorecard.apply)
 
+  val checks = Seq(
+    "Binary-Artifacts", "Branch-Protection", "CI-Tests", "CII-Best-Practices", "Code-Review", "Contributors", "Dangerous-Workflow", "Dependency-Update-Tool", "Fuzzing", "License", "Maintained", "Packaging", "Pinned-Dependencies", "SAST", "Security-Policy",
+    // Skipping Signed-Releases: scorecard can't verify this but the ASF release
+    // process ensures them.
+    // "Signed-Releases",
+    "Token-Permissions", "Vulnerabilities"
+  )
+
 object Scorecards extends Cached[String](identity):
   def has(repo: String): Boolean =
     has(s"score-$repo", s"https://github.com/apache/$repo")
@@ -43,7 +51,7 @@ object Scorecards extends Cached[String](identity):
   override def fetchUncached(repo: String): Array[Byte] =
     var p = Promise[java.io.InputStream]
     //var e = Promise[java.io.InputStream]
-    var seq = Seq("scorecard", s"--repo=$repo", "--format=json", "--show-details", "--verbosity=debug")
+    var seq = Seq("scorecard", s"--repo=$repo", "--format=json", "--show-details", "--verbosity=debug", s"--checks=${Scorecard.checks.mkString(",")}")
     println(s"Running ${seq.mkString(" ")}")
     var proc = Process(seq)
     var process = proc.run(new ProcessIO(
