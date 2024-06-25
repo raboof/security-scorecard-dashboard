@@ -3,11 +3,11 @@ package report
 import scorecard._
 import scalatags.Text.all._
 
-def renderScore(score: Double) =
+def renderScore(score: Double, yellowThreshold: Int = 5, greenThreshold: Int = 7) =
   val color =
     if score < 0 then "white"
-    else if score < 5 then "red"
-    else if score < 7 then "yellow"
+    else if score < yellowThreshold then "red"
+    else if score < greenThreshold then "yellow"
     else "green"
   td(style:=s"background: $color")(score)
 
@@ -15,7 +15,12 @@ def renderCard(card: Scorecard) =
   tr(
     td(card.repo.name),
     renderScore(card.score),
-    Scorecard.checks.map(c => renderScore(card.checks.get.find(_.name == c).get.score))
+    Scorecard.checks.map(c => {
+      val score = card.checks.get.find(_.name == c).get.score
+      c match
+        case "Branch-Protection" => renderScore(score, 3, 8)
+        case _ => renderScore(score)
+    })
   )
 
 def write(cards: Seq[Scorecard], to: String) =
